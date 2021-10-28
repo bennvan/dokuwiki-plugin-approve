@@ -180,7 +180,8 @@ class syntax_plugin_approve_table extends DokuWiki_Syntax_Plugin {
         $pages = $sqlite->res2arr($res);
 
         // Output Table
-        $renderer->doc .= '<table><tr>';
+        $renderer->doc .= '<div class="plugin__approve_table_wrapper">';
+        $renderer->doc .= '<table class="plugin__approve_table"><tr>';
         $renderer->doc .= '<th>' . $this->getLang('hdr_page') . '</th>';
         $renderer->doc .= '<th>' . $this->getLang('hdr_state') . '</th>';
         $renderer->doc .= '<th>' . $this->getLang('hdr_updated') . '</th>';
@@ -303,6 +304,6 @@ class syntax_plugin_approve_table extends DokuWiki_Syntax_Plugin {
             $renderer->doc .= '</td></tr>';
         }
 
-        $renderer->doc .= '</table>';
+        $renderer->doc .= '</table></div>';
     }
 }
