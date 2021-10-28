@@ -258,7 +258,8 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 
 			    //we can see drafts
                 if ($helper->client_can_see_drafts($INFO['id'], $approver)) {
-                    ptln('<a data-no-instant href="' . wl($INFO['id']) . '">');
+                    $aclass = ($last_approve['current'] ? 'newapp' : 'newdraft');
+                    ptln('<a data-no-instant class="plugin__approve_banner_'.$aclass.'" href="' . wl($INFO['id']) . '">');
                     ptln($this->getLang($last_approve['current'] ? 'newest_approved' : 'newest_draft'));
                     ptln('</a>');
                 //we cannot see link to draft but there is some newer approved version
@@ -267,7 +268,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                     if (!$last_approve['current']) {
                         $urlParameters['rev'] = $last_approve['rev'];
                     }
-                    ptln('<a data-no-instant href="' . wl($INFO['id'], $urlParameters) . '">');
+                    ptln('<a data-no-instant class="plugin__approve_banner_newapp" href="' . wl($INFO['id'], $urlParameters) . '">');
                     ptln($this->getLang('newest_approved'));
                     ptln('</a>');
                 }
@@ -294,7 +295,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 			if (!$last_approve) {
                 //not the newest page
                 if ($rev != $last_change_date) {
-				    ptln('<a data-no-instant href="'.wl($INFO['id']).'">');
+				    ptln('<a data-no-instant class="plugin__approve_banner_newdraft" href="'.wl($INFO['id']).'">');
                     ptln($this->getLang('newest_draft'));
 				    ptln('</a>');
 				}
@@ -303,7 +304,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                 if (!$last_approve['current']) {
                     $urlParameters['rev'] = $last_approve['rev'];
                 }
-                ptln('<a data-no-instant href="' . wl($INFO['id'], $urlParameters) . '">');
+                ptln('<a data-no-instant class="plugin__approve_banner_newapp" href="' . wl($INFO['id'], $urlParameters) . '">');
                 ptln($this->getLang('newest_approved'));
 				ptln('</a>');
 			}
@@ -326,7 +327,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                         'do' => 'diff',
                         'ready_for_approval' => 0
                     ];
-                    ptln(' | <a data-no-instant href="'.wl($INFO['id'], $urlParameters).'">');
+                    ptln('<a data-no-instant class="plugin__approve_banner_ready" href="'.wl($INFO['id'], $urlParameters).'">');
                     ptln($this->getLang('approve_ready'));
                     ptln('</a>');
                 }
@@ -338,7 +339,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                         'do' => 'diff',
                         'approve' => 0
                     ];
-                    ptln(' | <a data-no-instant href="'.wl($INFO['id'], $urlParameters).'">');
+                    ptln('<a data-no-instant class="plugin__approve_banner_approve" href="'.wl($INFO['id'], $urlParameters).'">');
                     ptln($this->getLang('approve'));
                     ptln('</a>');
                 }
@@ -349,7 +350,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 		}
 
 		if ($approver && $this->getConf('banner_long')) {
-            ptln(' | ' . $this->getLang('approver') . ': ' . userlink($approver, true));
+            ptln($this->getLang('approver') . ': ' . userlink($approver, true));
         }
 		ptln('</div>');
 	}
