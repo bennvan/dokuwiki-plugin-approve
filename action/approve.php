@@ -36,8 +36,11 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 		if (!$helper->use_approve_here($sqlite, $INFO['id'])) return;
 
 		if ($event->data == 'diff' && isset($_GET['approve'])) {
-		    $href = wl($INFO['id'], ['approve' => 'approve']);
-			ptln('<a data-no-instant class="plugin__approve_diff" href="' . $href . '">'.$this->getLang('approve').'</a>');
+            $href = wl($INFO['id'], ['approve' => 'minor']);
+            ptln('<a data-no-instant class="plugin__approve_minor" href="' . $href . '">'.$this->getLang('approve_minor').'</a>');
+
+		    $href = wl($INFO['id'], ['approve' => 'major']);
+			ptln('<a data-no-instant class="plugin__approve_major" href="' . $href . '">'.$this->getLang('approve_major').'</a>');
 		}
 
         if ($this->getConf('ready_for_approval') && $event->data == 'diff' && isset($_GET['ready_for_approval'])) {
@@ -93,17 +96,34 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
         if (!$helper->use_approve_here($sqlite, $INFO['id'], $approver)) return;
         if (!$helper->client_can_approve($INFO['id'], $approver)) return;
 
-        $res = $sqlite->query('SELECT MAX(version)+1 FROM revision
+        $approve_type = $_GET['approve'];
+
+        // Get the latest major release integer
+        $res = $sqlite->query('SELECT MAX(version) FROM revision
                                         WHERE page=?', $INFO['id']);
-        $next_version = $sqlite->res2single($res);
-        if (!$next_version) {
-            $next_version = 1;
+
+        $major = $sqlite->res2single($res);
+        $new_major = is_null($major)? 0 : $major;
+        $new_minor = 0;
+
+        if ($approve_type == 'minor') {
+            if (is_null($major)) {
+                $res = $sqlite->query('SELECT MAX(minor_version)+1 FROM revision
+                                        WHERE page=? AND version IS NULL', $INFO['id']);
+            } else {
+                $res = $sqlite->query('SELECT MAX(minor_version)+1 FROM revision
+                                        WHERE page=? AND version=?', $INFO['id'], $major);
+            }          
+            $new_minor = $sqlite->res2single($res);
+        } else {
+            $new_major = $new_major+1;
         }
+        
         //approved IS NULL prevents from overriding already approved page
         $sqlite->query('UPDATE revision
-                        SET approved=?, approved_by=?, version=?
+                        SET approved=?, approved_by=?, version=?, minor_version=?
                         WHERE page=? AND current=1 AND approved IS NULL',
-                        date('c'), $INFO['client'], $next_version, $INFO['id']);
+                        date('c'), $INFO['client'], $new_major, $new_minor, $INFO['id']);
 
         header('Location: ' . wl($INFO['id']));
 	}
@@ -215,7 +235,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 
 
         $res = $sqlite->query('SELECT ready_for_approval, ready_for_approval_by,
-                                        approved, approved_by, version
+                                        approved, approved_by, version, minor_version
                                 FROM revision
                                 WHERE page=? AND rev=?', $INFO['id'], $rev);
 
@@ -245,7 +265,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
 			
 			if($this->getConf('banner_long')) {
 				ptln(' ' . $this->getLang('by') . ' <b>' . userlink($approve['approved_by'] . '</b>', true));
-				ptln(' (' . $this->getLang('version') .  ': ' . $approve['version'] . ')');
+				ptln(' (' . $this->getLang('version') .  ': ' . $approve['version'] . '.'.$approve['minor_version'].')');
 			}
 
 			//not the newest page

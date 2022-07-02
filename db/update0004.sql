@@ -1,0 +1,2 @@
+ALTER TABLE revision
+ADD minor_version INTEGER NULL DEFAULT 0

@@ -66,14 +66,24 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
 
 
             $res = $sqlite->query('SELECT ready_for_approval, ready_for_approval_by,
-                                            approved, approved_by, version
+                                            approved, approved_by, version, minor_version
                                     FROM revision
                                     WHERE page=? AND rev=?', $INFO['id'], $rev);
 
             $approve = $sqlite->res_fetch_assoc($res);
             
-    
-            $text = $key == 'approved' ? dformat(strtotime($approve[$key])) : $approve[$key];
+            switch ($key) {
+                case 'approved':
+                    $text = dformat(strtotime($approve[$key]));
+                    break;
+                case 'version':
+                    $text = $approve['version'].'.'.$approve['minor_version'];
+                    break;
+                default:
+                    $text = $approve[$key];
+                    break;
+            }
+            
             if (!$text) $text = 'TBD';
 
             $renderer->doc .= '<span class="approve-var" data-key="'.$key.'">'.$text.'</span>';

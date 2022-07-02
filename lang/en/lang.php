@@ -1,6 +1,8 @@
 <?php
 
 $lang['approve'] = 'Approve';
+$lang['approve_major'] = 'Approve Major';
+$lang['approve_minor'] = 'Approve Minor';
 $lang['approved'] = 'Approved';
 $lang['approve_ready'] = 'Mark ready for approval';
 $lang['marked_approve_ready'] = 'Ready for approval';
