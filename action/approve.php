@@ -125,7 +125,8 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                         WHERE page=? AND current=1 AND approved IS NULL',
                         date('c'), $INFO['client'], $new_major, $new_minor, $INFO['id']);
 
-        header('Location: ' . wl($INFO['id']));
+        header('Clear-Site-Data: "cache"');
+        send_redirect(wl($INFO['id'],['t'=>time()], true, '&'));
 	}
 
     /**
@@ -154,7 +155,8 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                                 WHERE page=? AND current=1 AND ready_for_approval IS NULL',
         date('c'), $INFO['client'], $INFO['id']);
 
-        header('Location: ' . wl($INFO['id']));
+        header('Clear-Site-Data: "cache"');
+        send_redirect(wl($INFO['id'],['t'=>time()], true, '&'));
     }
 
     /**
@@ -198,7 +200,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
         //current page is approved
         if ($last_approved_rev == $last_change_date) return;
 
-	    header("Location: " . wl($INFO['id'], ['rev' => $last_approved_rev], false, '&'));
+	    send_redirect(wl($INFO['id'], ['rev' => $last_approved_rev], false, '&'));
 	}
 
     /**
