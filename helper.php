@@ -252,7 +252,7 @@ class helper_plugin_approve extends DokuWiki_Plugin {
         if (!$this->getConf('hide_drafts_for_viewers')) return true;
 
         if (auth_quickaclcheck($id) >= AUTH_EDIT) return true;
-        if ($this->client_can_approve($id, $pageApprover)) return true;
+        // if ($this->client_can_approve($id, $pageApprover)) return true;
 
         return false;
     }
