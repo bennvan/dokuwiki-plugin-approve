@@ -126,7 +126,7 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                         date('c'), $INFO['client'], $new_major, $new_minor, $INFO['id']);
 
         header('cache-control: "no-cache"');
-        send_redirect(wl($INFO['id'],['t'=>time()], true, '&'));
+        send_redirect(wl($INFO['id'],['t'=>time(),'purge'=>'true'], true, '&'));
 	}
 
     /**
