@@ -241,7 +241,9 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                                 FROM revision
                                 WHERE page=? AND rev=?', $INFO['id'], $rev);
 
-        $approve = $sqlite->res_fetch_assoc($res);
+        $approve = $sqlite->res_fetch_assoc($res) ?: [];
+        // Pages edited while Approve was disabled may have no revision record.
+        $approve += ['approved' => null, 'ready_for_approval' => null];
 
 		$classes = [];
 		if ($this->getConf('prettyprint')) {

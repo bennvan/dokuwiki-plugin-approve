@@ -63,7 +63,8 @@ class action_plugin_approve_migration extends DokuWiki_Action_Plugin
     {
         /** @var helper_plugin_sqlite $sqlite */
         $sqlite = $data['sqlite'];
-        $db = $sqlite->getAdapter()->getDb();
+        $adapter = $sqlite->getAdapter();
+        $db = method_exists($adapter, 'getPdo') ? $adapter->getPdo() : $adapter->getDb();
 
         /** @var helper_plugin_approve $helper */
         $helper = plugin_load('helper', 'approve');

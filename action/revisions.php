@@ -41,19 +41,12 @@ class action_plugin_approve_revisions extends DokuWiki_Action_Plugin {
 
             if ($type == 'checkbox') {
                 $revision = $element->val();
-                $element->attr('disabled', '0');
-                $ver = '';
-                if (!isset($approveRevisions[$revision])) {
-                    $class =  'plugin__approve_red';
-                } elseif ($approveRevisions[$revision]['approved']) {
-                    $class =  'plugin__approve_green';
-                    $form->getElementAt($pos+1)->val('<span class="plugin__approve_version"> [Ver. '.$approveRevisions[$revision]['version'].'.'.$approveRevisions[$revision]['minor_version'].'] </span>');
-                } elseif ($this->getConf('ready_for_approval') && $approveRevisions[$revision]['ready_for_approval']) {
-                    $class =  'plugin__approve_ready';
-                } else {
-                    $class =  'plugin__approve_red';
-                }
-                $form->getElementAt($pos-1)->addClass($class);
+                if (empty($approveRevisions[$revision]['approved'])) continue;
+
+                $approval = $approveRevisions[$revision];
+                $version = ($approval['version'] ?? 0) . '.' . ($approval['minor_version'] ?? 0);
+                $form->getElementAt($pos+1)->val('<strong class="plugin__approve_version"> [Ver. '.hsc($version).'] </strong>');
+                $form->getElementAt($pos-1)->addClass('plugin__approve_green');
             }
 
         }
@@ -94,17 +87,9 @@ class action_plugin_approve_revisions extends DokuWiki_Action_Plugin {
                 if ($revision == 'current') {
                     $revision = $INFO['meta']['date']['modified'];
                 }
-                if (!isset($approveRevisions[$revision])) {
-                    $class =  'plugin__approve_red';
-                } elseif ($approveRevisions[$revision]['approved']) {
-                    $class =  'plugin__approve_green';
-                } elseif ($this->getConf('ready_for_approval') && $approveRevisions[$revision]['ready_for_approval']) {
-                    $class =  'plugin__approve_ready';
-                } else {
-                    $class =  'plugin__approve_red';
+                if (!empty($approveRevisions[$revision]['approved'])) {
+                    $event->data->_content[$member]['class'] = 'li plugin__approve_green';
                 }
-
-                $event->data->_content[$member]['class'] = "li $class";
 
                 $member = null;
             }

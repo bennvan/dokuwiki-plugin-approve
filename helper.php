@@ -48,7 +48,7 @@ class helper_plugin_approve extends DokuWiki_Plugin {
 
         $res = $sqlite->query('SELECT page, approver FROM page WHERE page=? AND hidden=0', $id);
         $row = $sqlite->res2row($res);
-        $approver = $row['approver'];
+        $approver = $row['approver'] ?? null;
         if ($row) {
             return true;
         }

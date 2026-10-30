@@ -35,9 +35,9 @@ class action_plugin_approve_cache extends DokuWiki_Action_Plugin
         $approve = p_get_metadata($cache->page, 'plugin approve');
         if(!$approve) return;
 
-        if ($approve['dynamic_approver']) {
+        if (!empty($approve['dynamic_approver'])) {
             $cache->_nocache = true;
-        } elseif ($approve['approve_table']) {
+        } elseif (!empty($approve['approve_table'])) {
             try {
                 /** @var \helper_plugin_approve_db $db_helper */
                 $db_helper = plugin_load('helper', 'approve_db');
