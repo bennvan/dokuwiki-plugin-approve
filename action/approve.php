@@ -125,8 +125,10 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                         WHERE page=? AND current=1 AND approved IS NULL',
                         date('c'), $INFO['client'], $new_major, $new_minor, $INFO['id']);
 
-        header('cache-control: "no-cache"');
-        send_redirect(wl($INFO['id'],['t'=>time(),'purge'=>'true'], true, '&'));
+        // Approval variables are part of rendered HTML; keep the parser cache.
+        $cache = new \dokuwiki\Cache\CacheRenderer($INFO['id'], wikiFN($INFO['id']), 'xhtml');
+        $cache->removeCache();
+        send_redirect(wl($INFO['id'], [], true, '&'));
 	}
 
     /**
@@ -155,8 +157,9 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
                                 WHERE page=? AND current=1 AND ready_for_approval IS NULL',
         date('c'), $INFO['client'], $INFO['id']);
 
-        header('cache-control: "no-cache"');
-        send_redirect(wl($INFO['id'],['t'=>time()], true, '&'));
+        $cache = new \dokuwiki\Cache\CacheRenderer($INFO['id'], wikiFN($INFO['id']), 'xhtml');
+        $cache->removeCache();
+        send_redirect(wl($INFO['id'], [], true, '&'));
     }
 
     /**
