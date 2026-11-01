@@ -1,4 +1,7 @@
 <?php
+
+use dokuwiki\ChangeLog\PageChangeLog;
+
 /**
  * DokuWiki Plugin bez (Action Component)
  *
