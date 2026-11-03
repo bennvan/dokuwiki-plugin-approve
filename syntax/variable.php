@@ -40,7 +40,7 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
 
         if($mode == 'xhtml'){
             /** @var Doku_Renderer_xhtml $renderer */
-            global $INFO;
+            global $INFO, $ACT;
 
             list($state, $match, $pos, $key) = $data;
 
@@ -58,35 +58,39 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
             /** @var helper_plugin_approve $helper */
             $helper = plugin_load('helper', 'approve');
 
-            if (!$INFO['exists']) return;
             if (!$helper->use_approve_here($sqlite, $INFO['id'], $approver)) return;
 
-            $last_change_date = @filemtime(wikiFN($INFO['id']));
-            $rev = !$INFO['rev'] ? $last_change_date : $INFO['rev'];
+            $approve = [];
+            // Unsaved text is not the approved revision, even when previewing
+            // an edit to a page whose saved revision is still approved.
+            if (!empty($INFO['exists']) && !in_array($ACT, ['preview', 'changes', 'draft', 'recover'], true)) {
+                $rev = !empty($INFO['rev']) ? $INFO['rev'] : @filemtime(wikiFN($INFO['id']));
+                $res = $sqlite->query('SELECT approved, approved_by, version, minor_version
+                                        FROM revision WHERE page=? AND rev=?', $INFO['id'], $rev);
+                $approve = $sqlite->res_fetch_assoc($res);
+            }
 
-
-            $res = $sqlite->query('SELECT ready_for_approval, ready_for_approval_by,
-                                            approved, approved_by, version, minor_version
-                                    FROM revision
-                                    WHERE page=? AND rev=?', $INFO['id'], $rev);
-
-            $approve = $sqlite->res_fetch_assoc($res);
-            
-            switch ($key) {
-                case 'approved':
-                    $text = dformat(strtotime($approve[$key]));
-                    break;
-                case 'version':
-                    $text = $approve['version'].'.'.$approve['minor_version'];
-                    break;
-                default:
-                    $text = $approve[$key];
-                    break;
+            $text = 'TBD';
+            if (!empty($approve['approved'])) {
+                switch ($key) {
+                    case 'approved':
+                        $date = strtotime($approve['approved']);
+                        if ($date !== false) $text = dformat($date);
+                        break;
+                    case 'version':
+                        if (isset($approve['version'], $approve['minor_version'])) {
+                            $text = $approve['version'].'.'.$approve['minor_version'];
+                        }
+                        break;
+                    default:
+                        $text = $approve[$key] ?? 'TBD';
+                        break;
+                }
             }
             
             if (!$text) $text = 'TBD';
 
-            $renderer->doc .= '<span class="approve-var" data-key="'.$key.'">'.$text.'</span>';
+            $renderer->doc .= '<span class="approve-var" data-key="'.$key.'">'.hsc($text).'</span>';
             return true;
         }
         return false;
