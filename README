@@ -2,6 +2,19 @@ approve Plugin for DokuWiki
 
 Page approval mechanism for dokuwiki.
 
+Approval variables (where approval is enabled):
+
+  * @APPROVE_VERSION@ — approved major/minor version.
+  * @APPROVE_DATE@ — approval date, using the wiki's date format.
+  * @APPROVE_USER@ — approving user's username.
+  * @APPROVE_NAME@ — approving user's current full name from the authentication
+    backend, falling back to the username if the name/account is unavailable.
+
+Unapproved revisions and edit previews show TBD. The full name is looked up
+when rendering, not stored in the approval database; this also applies to old
+approved revisions. After changing a user's name, a cached page may need purging
+before the new name appears.
+
 All documentation for this plugin can be found at
 https://www.dokuwiki.org/plugin:approve
 

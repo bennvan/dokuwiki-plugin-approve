@@ -1,6 +1,6 @@
 <?php
 /**
- * Variable syntax for approval plugin: Inserts version numbers and dates.
+ * Variable syntax for approval plugin: Inserts approval versions, dates and users.
  * 
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Ben van Magill <ben.vanmagill16@gmail.com>
@@ -15,6 +15,7 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
         $this->Lexer->addSpecialPattern('@APPROVE_VERSION@',$mode,'plugin_approve_variable');
         $this->Lexer->addSpecialPattern('@APPROVE_DATE@',$mode,'plugin_approve_variable');
         $this->Lexer->addSpecialPattern('@APPROVE_USER@',$mode,'plugin_approve_variable');
+        $this->Lexer->addSpecialPattern('@APPROVE_NAME@',$mode,'plugin_approve_variable');
     }
  
     public function handle($match, $state, $pos, Doku_Handler $handler) {
@@ -28,6 +29,9 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
             case '@APPROVE_USER@':
                 $key = 'approved_by';
                 break;
+            case '@APPROVE_NAME@':
+                $key = 'approved_name';
+                break;
             default:
                 $key = '';
                 break;
@@ -40,7 +44,7 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
 
         if($mode == 'xhtml'){
             /** @var Doku_Renderer_xhtml $renderer */
-            global $INFO, $ACT;
+            global $INFO, $ACT, $auth;
 
             list($state, $match, $pos, $key) = $data;
 
@@ -81,6 +85,12 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
                         if (isset($approve['version'], $approve['minor_version'])) {
                             $text = $approve['version'].'.'.$approve['minor_version'];
                         }
+                        break;
+                    case 'approved_name':
+                        $username = $approve['approved_by'] ?? '';
+                        $user = $username !== '' && $auth ? $auth->getUserData($username, false) : false;
+                        $name = trim($user['name'] ?? '');
+                        $text = $name !== '' ? $name : $username;
                         break;
                     default:
                         $text = $approve[$key] ?? 'TBD';
