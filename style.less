@@ -38,3 +38,61 @@ div.plugin__approve_table_wrapper {
   margin-left: 0.5rem;
   margin-top: 0.4rem;
 }
+
+.plugin__approve_separator {
+  clear: both;
+}
+
+.plugin__approve_edits {
+  margin: 1rem 0;
+  summary { cursor: pointer; font-weight: bold; }
+  ul { margin-top: .5rem; max-height: 20rem; overflow-y: auto; }
+}
+
+.plugin__approve_message {
+  font-weight: normal;
+  margin-top: .25em;
+  overflow-wrap: anywhere;
+}
+
+.plugin__approve_history > li + li { margin-top: .5em; }
+.plugin__approve_history_approval { margin-top: .25em; }
+
+.dokuwiki form.plugin__approve_form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  clear: both;
+  margin-top: 1rem;
+
+  .plugin__approve_message_field {
+    flex: 1 1 20rem;
+    min-width: 0;
+  }
+
+  label {
+    display: block;
+    margin-bottom: .3rem;
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+
+  .plugin__approve_buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+    gap: .5rem;
+  }
+
+  .plugin__approve_major,
+  .plugin__approve_minor {
+    float: none;
+    margin: 0;
+  }
+}

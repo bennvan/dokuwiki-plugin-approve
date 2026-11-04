@@ -9,6 +9,66 @@ Approval variables (where approval is enabled):
   * @APPROVE_USER@ — approving user's username.
   * @APPROVE_NAME@ — approving user's current full name from the authentication
     backend, falling back to the username if the name/account is unavailable.
+  * @APPROVE_MESSAGE@ — the Approval Message saved with the displayed revision.
+    Empty for approved revisions without a message, including older approvals.
+
+The approval comparison screen has an optional Approval Message beside the
+Approve Major/Minor buttons. Messages are plain text (up to 4000 characters),
+with line breaks preserved, and belong to that approval rather than a wiki edit.
+They are not automatically filled from edit summaries. The message variable also
+works in PDF exports. Drafts and previews show TBD, as with other approval variables.
+
+Approval is submitted using a CSRF-protected POST form and checks the reviewed
+revision is still current. Old direct approval GET links no longer approve pages.
+Database update 5 adds a nullable message column; existing approvals are retained.
+Nonempty approval messages also appear in Old Revisions and below the corresponding
+diff headings. The approval banner stays compact and does not show messages.
+Original edit summaries are retained. Empty messages add no UI elements.
+
+Approval review compares the last approved revision with the current draft. For
+the first approval, the whole page is shown as new content. Differences views
+for editors label approved versions and drafts in the revision selectors, and
+list the edit summaries after the older revision through the newer revision
+(inclusive). Changing the comparison updates this list; approval is offered only
+when the comparison includes the current unapproved revision. Core diff rendering
+is reused, with no changes to DokuWiki or the Changes plugin.
+
+Page history syntax (for the current page):
+
+---- approve history ----
+from: 1.0
+to: 3.0
+show: all
+----
+
+This lists edit summaries and any approved versions with their approval messages
+AFTER version 1.0 THROUGH version 3.0. The starting revision is excluded, matching
+the diff view. Edit authors/dates and approval authors/dates are shown separately.
+All intervening approvals are included, not only the final one.
+
+For a release history with only approved versions and their messages:
+
+---- approve history ----
+show: approvals
+order: oldest
+----
+
+Options:
+  * from/to: approval versions such as 1.0 or v1.0, or rev:1700000000 for an exact
+    revision timestamp. Unknown versions/options produce an error, not an unfiltered list.
+  * Omitting from starts before the first revision. Omitting to (or using current)
+    ends at the revision being viewed. Old revisions never include later history.
+  * show: all (default) or approvals. Approval-only lists omit all edit summaries.
+  * order: newest (default) or oldest.
+
+No page or namespace parameter is supported. Read access and the draft-visibility
+rules apply; readers who cannot see drafts cannot list history beyond the latest
+approved revision. Empty approval messages add no message element, but the approved
+version is still listed. The list uses ordinary HTML, without JavaScript or a new
+database table, and shares its lookup/rendering code with the diff history panel.
+Pages with history syntax bypass the rendered HTML cache to reflect approvals and
+viewer permissions. Approval also touches existing page metadata to invalidate
+dependent exports such as DW2PDF.
 
 Unapproved revisions and edit previews show TBD. The full name is looked up
 when rendering, not stored in the approval database; this also applies to old

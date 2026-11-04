@@ -26,7 +26,7 @@ class action_plugin_approve_revisions extends DokuWiki_Action_Plugin {
 
         if (!$helper->use_approve_here($sqlite, $INFO['id'])) return;
 
-        $res = $sqlite->query('SELECT rev, approved, ready_for_approval, version, minor_version
+        $res = $sqlite->query('SELECT rev, approved, ready_for_approval, version, minor_version, approval_message
                                 FROM revision
                                 WHERE page=?', $INFO['id']);
         $approveRevisions = $sqlite->res2arr($res);
@@ -47,6 +47,9 @@ class action_plugin_approve_revisions extends DokuWiki_Action_Plugin {
                 $version = ($approval['version'] ?? 0) . '.' . ($approval['minor_version'] ?? 0);
                 $form->getElementAt($pos+1)->val('<strong class="plugin__approve_version"> [Ver. '.hsc($version).'] </strong>');
                 $form->getElementAt($pos-1)->addClass('plugin__approve_green');
+                // Keep the original edit summary; the approval covers the whole version.
+                $details = $form->getElementAt($pos+2);
+                $details->val($details->val() . $helper->formatApprovalMessage($approval['approval_message'] ?? null));
             }
 
         }

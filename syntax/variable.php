@@ -16,6 +16,7 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
         $this->Lexer->addSpecialPattern('@APPROVE_DATE@',$mode,'plugin_approve_variable');
         $this->Lexer->addSpecialPattern('@APPROVE_USER@',$mode,'plugin_approve_variable');
         $this->Lexer->addSpecialPattern('@APPROVE_NAME@',$mode,'plugin_approve_variable');
+        $this->Lexer->addSpecialPattern('@APPROVE_MESSAGE@',$mode,'plugin_approve_variable');
     }
  
     public function handle($match, $state, $pos, Doku_Handler $handler) {
@@ -31,6 +32,9 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
                 break;
             case '@APPROVE_NAME@':
                 $key = 'approved_name';
+                break;
+            case '@APPROVE_MESSAGE@':
+                $key = 'approval_message';
                 break;
             default:
                 $key = '';
@@ -69,7 +73,7 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
             // an edit to a page whose saved revision is still approved.
             if (!empty($INFO['exists']) && !in_array($ACT, ['preview', 'changes', 'draft', 'recover'], true)) {
                 $rev = !empty($INFO['rev']) ? $INFO['rev'] : @filemtime(wikiFN($INFO['id']));
-                $res = $sqlite->query('SELECT approved, approved_by, version, minor_version
+                $res = $sqlite->query('SELECT approved, approved_by, version, minor_version, approval_message
                                         FROM revision WHERE page=? AND rev=?', $INFO['id'], $rev);
                 $approve = $sqlite->res_fetch_assoc($res);
             }
@@ -92,15 +96,21 @@ class syntax_plugin_approve_variable extends \dokuwiki\Extension\SyntaxPlugin  {
                         $name = trim($user['name'] ?? '');
                         $text = $name !== '' ? $name : $username;
                         break;
+                    case 'approval_message':
+                        $text = $approve['approval_message'] ?? '';
+                        if (trim($text) === '') $text = '';
+                        break;
                     default:
                         $text = $approve[$key] ?? 'TBD';
                         break;
                 }
             }
             
-            if (!$text) $text = 'TBD';
+            if (!$text && $key !== 'approval_message') $text = 'TBD';
 
-            $renderer->doc .= '<span class="approve-var" data-key="'.$key.'">'.hsc($text).'</span>';
+            $escaped = hsc($text);
+            if ($key === 'approval_message') $escaped = nl2br($escaped);
+            $renderer->doc .= '<span class="approve-var" data-key="'.$key.'">'.$escaped.'</span>';
             return true;
         }
         return false;

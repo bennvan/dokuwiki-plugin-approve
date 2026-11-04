@@ -4,6 +4,14 @@
 if (!defined('DOKU_INC')) die();
 class helper_plugin_approve extends DokuWiki_Plugin {
 
+    /** Render plain-text approval messages consistently; omit empty messages. */
+    public function formatApprovalMessage(?string $message): string {
+        if (trim($message ?? '') === '') return '';
+        $label = hsc($this->getLang('approval_message'));
+        $text = nl2br(hsc($message));
+        return '<div class="plugin__approve_message"><strong>' . $label . ':</strong> ' . $text . '</div>';
+    }
+
     /**
      * @param helper_plugin_sqlite $sqlite
      * @return string

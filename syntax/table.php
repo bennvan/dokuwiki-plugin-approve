@@ -103,7 +103,7 @@ class syntax_plugin_approve_table extends \dokuwiki\Extension\SyntaxPlugin  {
     public function renderMetadata(Doku_Renderer $renderer, $params)
     {
         $plugin_name = $this->getPluginName();
-        $renderer->meta['plugin'][$plugin_name] = [];
+        $renderer->meta['plugin'][$plugin_name] ??= [];
 
         if ($params['approver'] == '$USER$') {
             $renderer->meta['plugin'][$plugin_name]['dynamic_approver'] = true;

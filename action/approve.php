@@ -20,7 +20,9 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
      * @param Doku_Event $event
      */
     public function handle_diff_accept(Doku_Event $event) {
-		global $INFO;
+		global $INFO, $INPUT;
+
+        if ($event->data != 'diff') return;
 
         try {
             /** @var \helper_plugin_approve_db $db_helper */
@@ -33,17 +35,37 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
         /** @var helper_plugin_approve $helper */
         $helper = plugin_load('helper', 'approve');
 
-		if (!$helper->use_approve_here($sqlite, $INFO['id'])) return;
+		if (!$helper->use_approve_here($sqlite, $INFO['id'], $approver)) return;
 
-		if ($event->data == 'diff' && isset($_GET['approve'])) {
-            $href = wl($INFO['id'], ['approve' => 'minor']);
-            ptln('<a data-no-instant class="plugin__approve_minor" href="' . $href . '">'.$this->getLang('approve_minor').'</a>');
-
-		    $href = wl($INFO['id'], ['approve' => 'major']);
-			ptln('<a data-no-instant class="plugin__approve_major" href="' . $href . '">'.$this->getLang('approve_major').'</a>');
+		if ($INPUT->has('approve') && $helper->client_can_approve($INFO['id'], $approver)) {
+            $rev = (int) ($INFO['currentrev'] ?? 0);
+            $compared = $INPUT->arr('rev2');
+            // Do not approve today's revision from a comparison of two old revisions.
+            $comparesCurrent = count($compared) < 2 || in_array(0, array_map('intval', $compared), true)
+                || in_array($rev, array_map('intval', $compared), true);
+            $res = $sqlite->query('SELECT rev FROM revision WHERE page=? AND rev=? AND current=1 AND approved IS NULL',
+                $INFO['id'], $rev);
+            if ($rev && $comparesCurrent && $sqlite->res2single($res)) {
+                echo '<hr class="plugin__approve_separator" />', "\n";
+                echo '<form class="plugin__approve_form" method="post" action="' . wl($INFO['id']) . '">', "\n";
+                echo '<input type="hidden" name="id" value="' . hsc($INFO['id']) . '" />', "\n";
+                echo '<input type="hidden" name="do" value="show" />', "\n";
+                echo '<input type="hidden" name="approve_revision" value="' . $rev . '" />', "\n";
+                echo '<input type="hidden" name="sectok" value="' . hsc(getSecurityToken()) . '" />', "\n";
+                echo '<div class="plugin__approve_message_field">', "\n";
+                echo '<label for="plugin__approve_message">' . $this->getLang('approval_message') . '</label>', "\n";
+                echo '<textarea id="plugin__approve_message" name="approval_message" class="form-control" rows="1"'
+                    . ' maxlength="4000" placeholder="' . hsc($this->getLang('message_optional')) . '"></textarea>', "\n";
+                echo '</div><div class="plugin__approve_buttons">', "\n";
+                echo '<button type="submit" name="approve" value="major" class="plugin__approve_major">'
+                    . $this->getLang('approve_major') . '</button>', "\n";
+                echo '<button type="submit" name="approve" value="minor" class="plugin__approve_minor">'
+                    . $this->getLang('approve_minor') . '</button>', "\n";
+                echo '</div></form>', "\n";
+            }
 		}
 
-        if ($this->getConf('ready_for_approval') && $event->data == 'diff' && isset($_GET['ready_for_approval'])) {
+        if ($this->getConf('ready_for_approval') && $event->data == 'diff' && $INPUT->has('ready_for_approval')) {
             $href = wl($INFO['id'], ['ready_for_approval' => 'ready_for_approval']);
             ptln('<a data-no-instant class="plugin__approve_diff" href="' . $href . '">'.$this->getLang('approve_ready').'</a>');
 		}
@@ -78,7 +100,24 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
      * @param Doku_Event $event
      */
     public function handle_approve(Doku_Event $event) {
-		global $INFO;
+		global $INFO, $INPUT;
+
+        if ($event->data != 'show' || !$INPUT->post->has('approve')) return;
+        if ($INPUT->server->str('REQUEST_METHOD') !== 'POST') return;
+        if (!checkSecurityToken($INPUT->post->str('sectok'))) return;
+        $approve_type = $INPUT->post->str('approve');
+        if (!in_array($approve_type, ['major', 'minor'], true)) return;
+        $rev = $INPUT->post->int('approve_revision');
+        clearstatcache(true, wikiFN($INFO['id']));
+        if (!$rev || $rev !== (int) @filemtime(wikiFN($INFO['id']))) {
+            msg($this->getLang('approval_changed'), -1);
+            return;
+        }
+        $message = trim($INPUT->post->str('approval_message'));
+        if (\dokuwiki\Utf8\PhpString::strlen($message) > 4000) {
+            msg($this->getLang('message_too_long'), -1);
+            return;
+        }
 
         try {
             /** @var \helper_plugin_approve_db $db_helper */
@@ -91,12 +130,8 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
         /** @var helper_plugin_approve $helper */
         $helper = plugin_load('helper', 'approve');
 
-        if ($event->data != 'show') return;
-        if (!isset($_GET['approve'])) return;
         if (!$helper->use_approve_here($sqlite, $INFO['id'], $approver)) return;
         if (!$helper->client_can_approve($INFO['id'], $approver)) return;
-
-        $approve_type = $_GET['approve'];
 
         // Get the latest major release integer
         $res = $sqlite->query('SELECT MAX(version) FROM revision
@@ -120,14 +155,22 @@ class action_plugin_approve_approve extends DokuWiki_Action_Plugin {
         }
         
         //approved IS NULL prevents from overriding already approved page
-        $sqlite->query('UPDATE revision
-                        SET approved=?, approved_by=?, version=?, minor_version=?
-                        WHERE page=? AND current=1 AND approved IS NULL',
-                        date('c'), $INFO['client'], $new_major, $new_minor, $INFO['id']);
+        $result = $sqlite->query('UPDATE revision
+                        SET approved=?, approved_by=?, version=?, minor_version=?, approval_message=?
+                        WHERE page=? AND rev=? AND current=1 AND approved IS NULL',
+                        date('c'), $INFO['client'], $new_major, $new_minor, $message, $INFO['id'], $rev);
+        if (!$result || $result->rowCount() !== 1) {
+            msg($this->getLang('approval_changed'), -1);
+            return;
+        }
 
         // Approval variables are part of rendered HTML; keep the parser cache.
         $cache = new \dokuwiki\Cache\CacheRenderer($INFO['id'], wikiFN($INFO['id']), 'xhtml');
         $cache->removeCache();
+        // Exports such as DW2PDF depend on page metadata, not the approval DB.
+        // Invalidate those derived files when approval history changes as well.
+        $metadata = metaFN($INFO['id'], '.meta');
+        if (is_file($metadata)) touch($metadata);
         send_redirect(wl($INFO['id'], [], true, '&'));
 	}
 
